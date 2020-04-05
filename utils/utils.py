@@ -2,6 +2,7 @@ from builtins import print
 import numpy as np
 import pandas as pd
 import matplotlib
+import random
 
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -27,6 +28,28 @@ from sklearn.preprocessing import LabelEncoder
 
 from scipy.interpolate import interp1d
 from scipy.io import loadmat
+
+
+def generate_noisy_labels(labels, noise_percent):
+    labels = np.array(labels)
+    classes = np.unique(labels)
+    randomIndex = random.sample(range(len(labels)), int(len(labels) * noise_percent))
+
+    newLabels = np.array(labels, copy=True)
+
+    noisyLabels = np.array([])
+
+    for index in randomIndex:
+        # remove original label
+        noisyClasses = classes[classes != newLabels[index]]
+        # generate probability array for remaining classes
+        noiseProb = [1/(len(classes)-1) for i in noisyClasses];
+        noisyLabels = np.append(noisyLabels, np.random.choice(noisyClasses, 1,  noiseProb))
+
+    newLabels[randomIndex] = noisyLabels.flatten().astype(int)
+
+    assert len(newLabels[newLabels != labels]) == len(randomIndex), 'noisy label generated are not of specified percentage'
+    return newLabels
 
 
 def readucr(filename):
@@ -72,7 +95,7 @@ def read_dataset(root_dir, archive_name, dataset_name):
                                        y_test.copy())
 
     elif archive_name == 'UCRArchive_2018':
-        root_dir_dataset = cur_root_dir + '/archives/' + archive_name + '/' + dataset_name + '/'
+        root_dir_dataset = cur_root_dir + '/archives/' + archive_name + '/' + dataset_name
         df_train = pd.read_csv(root_dir_dataset + '/' + dataset_name + '_TRAIN.tsv', sep='\t', header=None)
 
         df_test = pd.read_csv(root_dir_dataset + '/' + dataset_name + '_TEST.tsv', sep='\t', header=None)
@@ -355,8 +378,8 @@ def save_logs_t_leNet(output_directory, hist, y_pred, y_true, duration):
 
     df_best_model['best_model_train_loss'] = row_best_model['loss']
     df_best_model['best_model_val_loss'] = row_best_model['val_loss']
-    df_best_model['best_model_train_acc'] = row_best_model['acc']
-    df_best_model['best_model_val_acc'] = row_best_model['val_acc']
+    df_best_model['best_model_train_acc'] = row_best_model['accuracy']
+    df_best_model['best_model_val_acc'] = row_best_model['val_accuracy']
     df_best_model['best_model_nb_epoch'] = index_best_model
 
     df_best_model.to_csv(output_directory + 'df_best_model.csv', index=False)
@@ -381,8 +404,8 @@ def save_logs(output_directory, hist, y_pred, y_true, duration, lr=True, y_true_
 
     df_best_model['best_model_train_loss'] = row_best_model['loss']
     df_best_model['best_model_val_loss'] = row_best_model['val_loss']
-    df_best_model['best_model_train_acc'] = row_best_model['accuracy']
-    df_best_model['best_model_val_acc'] = row_best_model['val_accuracy']
+    df_best_model['best_model_train_acc'] = row_best_model['acc']
+    df_best_model['best_model_val_acc'] = row_best_model['val_acc']
     if lr == True:
         df_best_model['best_model_learning_rate'] = row_best_model['lr']
     df_best_model['best_model_nb_epoch'] = index_best_model

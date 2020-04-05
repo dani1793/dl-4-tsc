@@ -5,6 +5,7 @@ from utils.utils import transform_mts_to_ucr_format
 from utils.utils import visualize_filter
 from utils.utils import viz_for_survey_paper
 from utils.utils import viz_cam
+from utils.utils import generate_noisy_labels
 import os
 import numpy as np
 import sys
@@ -22,6 +23,11 @@ def fit_classifier():
     x_test = datasets_dict[dataset_name][2]
     y_test = datasets_dict[dataset_name][3]
 
+    # adding noise to train dataset
+    if label_noise != float(0):
+        y_train = generate_noisy_labels(y_train, label_noise)
+        print('noise added to training labels')
+
     nb_classes = len(np.unique(np.concatenate((y_train, y_test), axis=0)))
 
     # transform the labels from integers to one hot vectors
@@ -34,7 +40,7 @@ def fit_classifier():
     y_true = np.argmax(y_test, axis=1)
 
     if len(x_train.shape) == 2:  # if univariate
-        # add a dimension to make it multivariate with one dimension 
+        # add a dimension to make it multivariate with one dimension
         x_train = x_train.reshape((x_train.shape[0], x_train.shape[1], 1))
         x_test = x_test.reshape((x_test.shape[0], x_test.shape[1], 1))
 
@@ -135,7 +141,9 @@ else:
     if itr == '_itr_0':
         itr = ''
 
-    output_directory = root_dir + '/results/' + classifier_name + '/' + archive_name + itr + '/' + \
+    label_noise = float(sys.argv[5])
+
+    output_directory = root_dir + '/results/' + classifier_name + '/' + archive_name + itr + ('' if label_noise == float(0) else '_noise_' + str(label_noise)) + '/' + \
                        dataset_name + '/'
 
     test_dir_df_metrics = output_directory + 'df_metrics.csv'
